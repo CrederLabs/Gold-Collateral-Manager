@@ -6,13 +6,11 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
-// import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
 
 // 역할: MCGB NFT를 담보로 맡기면 1:1 페깅 토큰을 빌려준다. (KIP-7 민팅) 
 // 1:1 페깅 토큰을 갚으면 담보물을 다시 돌려준다. 이후 받은 KIP-7 토큰은 소각.
@@ -33,7 +31,8 @@ interface TheMiningClubInterface {
     function getGoldTypeOfTokenId(uint256 tokenId) external view returns (uint16);
 }
 
-contract GoldCollateralManager is Ownable, ERC20 {
+contract GoldCollateralManager is ERC20, Ownable, Pausable {
+    using SafeERC20 for IERC20;
 
     IERC721 public immutable goldNFTContract;
 
@@ -85,7 +84,7 @@ contract GoldCollateralManager is Ownable, ERC20 {
         collateralExchangeAmount[7] = 20000 * 10**18;
     }
     
-    function createNewCollateral(uint256 _tokenId) public {
+    function createNewCollateral(uint256 _tokenId) public whenNotPaused {
         require(goldNFTContract.ownerOf(_tokenId) == msg.sender, "You don't own!");
 
         uint16 goldType = TheMiningClubInterface(address(goldNFTContract)).getGoldTypeOfTokenId(_tokenId);
@@ -108,8 +107,10 @@ contract GoldCollateralManager is Ownable, ERC20 {
         // mint KIP-7(ERC-20)
         _mint(msg.sender, gpcSupplyAmount);
 
-        // TODO: emit event
+        // TODO: hisotry 조회용 기록 남기기
 
+        // TODO: emit event
+        
     }
 
     // goldType 에 따른 교환비는 owner 가 추가 등록
@@ -127,15 +128,35 @@ contract GoldCollateralManager is Ownable, ERC20 {
     // TODO: find token id
     // 
 
-    function repay(uint256 _tokenId, uint256 _gpcAmount) public {
+    function repay(uint256 _tokenId) public whenNotPaused {
+        require(collaterals[_tokenId].userAccount == msg.sender, "Not matched userAccount");
+        require(collaterals[_tokenId].collateralStatus == CollateralStatus.RECEIVED, "No received collateral");
+
+        uint16 goldType = TheMiningClubInterface(address(goldNFTContract)).getGoldTypeOfTokenId(_tokenId);
+        require(goldType > 0, "Invalid goldType");
+
+        uint256 gpcRepaymentAmount = collateralExchangeAmount[goldType];
+        require(gpcRepaymentAmount > 0, "Invalid gpcRepaymentAmount");
+
+        IERC20(this).transferFrom(msg.sender, address(this), gpcRepaymentAmount);
         
-        // 해당 담보가 이 유저의 것이 맞는가?
-
-
-
-        // stakingToken.transferFrom(msg.sender, address(this), amount);
+        // update 담보 status
+        // collaterals[_tokenId] = CollateralData(
+        //     msg.sender,
+        //     _tokenId,
+        //     goldType,
+        //     CollateralStatus.RECEIVED
+        // );
+        collaterals[_tokenId].collateralStatus = CollateralStatus.RETURNED;
         
-        //  
+        // NFT 돌려주기
+        goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
+
+        
+
+        // TODO: hisotry 조회용 기록 남기기
+
+        // TODO: emit event
 
     }
 

@@ -27,7 +27,7 @@ async function main() {
   // 
 
   const [owner, otherAccount] = await ethers.getSigners();
-  console.log("owner: ", owner);
+  console.log("owner: ", owner.address);
   // console.log("otherAccount: ", otherAccount);
 
   let tokenId = 1;
@@ -60,7 +60,19 @@ async function main() {
   console.log("collateral: ", collateral);
 
   let balance = await goldCollateralManager.balanceOf(owner);
-  console.log("balance: ", balance);
+  console.log("balance: ", balance + " GPC");
+
+  console.log("GPC 상환 및 담보 돌려받기 시작");
+
+  await goldCollateralManager.approve(goldCollateralManager.target, balance);
+  await goldCollateralManager.repay(tokenId);
+
+  balance = await goldCollateralManager.balanceOf(owner);
+  console.log("balance: ", balance + " GPC");
+
+  // NFT 소유 확인
+  let nftOwnerAddress = await devNFT.ownerOf(tokenId);
+  console.log("nftOwnerAddress: ", nftOwnerAddress);
 
 }
 
