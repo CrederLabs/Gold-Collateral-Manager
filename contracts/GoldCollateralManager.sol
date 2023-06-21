@@ -173,7 +173,7 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         collateralIndexByAddress[_account].pop();
     }
 
-    function findCollateralTokenIdsByTokenId(uint256 _tokenId) public view returns (uint256) {
+    function findCollateralIndexByTokenId(uint256 _tokenId) public view returns (uint256) {
         uint256 length = collateralTokenIds.length;
         uint256 indexOfTokenId;
         for (uint256 i = 0; i < length; i++) {
@@ -219,7 +219,7 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
         totalBurntGold += gpcRepaymentAmount;
 
-        uint256 indexOfTokenId2 = findCollateralTokenIdsByTokenId(_tokenId);
+        uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
         removeForCollateralTokenIds(indexOfTokenId2);
 
         // Leave a record for history inquiry
