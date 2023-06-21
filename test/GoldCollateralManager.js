@@ -12,6 +12,10 @@ describe("GoldCollateralManager", function () {
     async function deployFixture() {
         const tokenId = 1;
         const goldType = 1;
+        const gpcRepaymentAmount = "5000000000000000000";
+
+        const COLLATERAL_STATUS_RECEIVED = 1;
+        const COLLATERAL_STATUS_RETURNED = 2;
 
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
@@ -24,7 +28,7 @@ describe("GoldCollateralManager", function () {
         const GoldCollateralManager = await ethers.getContractFactory("GoldCollateralManager");
         const goldCollateralManager = await GoldCollateralManager.deploy(devNFT.target);
 
-        return { tokenId, goldType, devNFT, goldCollateralManager, owner, otherAccount };
+        return { tokenId, goldType, gpcRepaymentAmount, devNFT, goldCollateralManager, owner, otherAccount, COLLATERAL_STATUS_RECEIVED, COLLATERAL_STATUS_RETURNED };
     }
 
     describe("Deployment", function () {
@@ -82,6 +86,100 @@ describe("GoldCollateralManager", function () {
 
                 expect(await goldCollateralManager.collateralExchangeAmount(7)).to.equal("20000000000000000000000");
             });
+        });
+    });
+
+    describe("CreateNewCollateral", function () {
+        it("Should be CollateralStatus.RECEIVED", async function () {
+            const { devNFT, goldCollateralManager, tokenId, COLLATERAL_STATUS_RECEIVED } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            let resultCollaterals = await goldCollateralManager.collaterals(tokenId);
+            expect(parseInt(resultCollaterals[3])).to.equal(COLLATERAL_STATUS_RECEIVED);
+        });
+
+        it("Should transfer NFT to GoldCollateralManager Contract", async function () {
+            const { devNFT, goldCollateralManager, tokenId } = await loadFixture(deployFixture);
+            
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            expect(await devNFT.ownerOf(tokenId)).to.equal(goldCollateralManager.target);
+        });
+
+        it("Should transfer GPC to the owner", async function () {
+            const { devNFT, goldCollateralManager, tokenId, owner } = await loadFixture(deployFixture);
+            
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            expect(await goldCollateralManager.balanceOf(owner)).to.equal("5000000000000000000");
+        });
+
+        it("Should find owner's collateral token ids", async function () {
+            const { devNFT, goldCollateralManager, tokenId } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+            let resultCollaterals = await goldCollateralManager.findCollateralsByAddress();
+
+            expect(parseInt(resultCollaterals[0])).to.equal(tokenId);
+        });
+    });
+
+    describe("Repay", function () {
+        it("Should be CollateralStatus.RETURNED", async function () {
+            const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount, COLLATERAL_STATUS_RETURNED } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
+            await goldCollateralManager.repay(tokenId);
+
+            let resultCollaterals = await goldCollateralManager.collaterals(tokenId);
+
+            expect(parseInt(resultCollaterals[3])).to.equal(COLLATERAL_STATUS_RETURNED);
+        });
+
+        it("Should burn GPC by GoldCollateralManager Contract", async function () {
+            const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
+            await goldCollateralManager.repay(tokenId);
+            
+            expect(await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD")).to.equal("5000000000000000000");
+        });
+        
+        it("Should give back NFT to the owner", async function () {
+            const { devNFT, goldCollateralManager, tokenId, owner, gpcRepaymentAmount } = await loadFixture(deployFixture);
+            
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
+            await goldCollateralManager.repay(tokenId);
+
+            expect(await devNFT.ownerOf(tokenId)).to.equal(owner.address);
+        });
+
+        it("Should delete owner's collateral token ids", async function () {
+            const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+
+            await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
+            await goldCollateralManager.repay(tokenId);
+
+            let resultCollaterals = await goldCollateralManager.findCollateralsByAddress();
+
+            expect(parseInt(resultCollaterals.length)).to.equal(0);
         });
     });
 });
