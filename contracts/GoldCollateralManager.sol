@@ -238,17 +238,17 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         return totalCreatedGold - totalBurntGold;
     }
 
-    function recoverERC20(address _tokenAddress, uint256 _amount) onlyOwner public {
+    function recoverERC20(address _tokenAddress, uint256 _amount) public onlyOwner {
         IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
         emit RecoverERC20(_tokenAddress, _amount);
     }
 
-    function recoverERC721(address _tokenAddress, uint256 _tokenId) onlyOwner public {
+    function recoverERC721(address _tokenAddress, uint256 _tokenId) public onlyOwner {
         IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
         emit RecoverERC721(_tokenAddress, _tokenId);
     }
 
-    function recoverKLAY() onlyOwner public {
+    function recoverKLAY() public onlyOwner {
         payable(msg.sender).transfer(address(this).balance);
         emit RecoverKLAY(address(this).balance);
     }
