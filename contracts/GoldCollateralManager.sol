@@ -11,9 +11,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// 역할: MCGB NFT를 담보로 맡기면 1:1 페깅 토큰을 빌려준다. (KIP-7 민팅) 
-// 1:1 페깅 토큰을 갚으면 담보물을 다시 돌려준다. 이후 받은 KIP-7 토큰은 소각.
-// Gold NFT 하나만 취급한다. 팔라듐, 구리 등 다른 RWA 자산은 PCP, CCP 등 다른 컨트랙트가 취급해야 한다.
+// 역할: MCGB NFT를 담보로 맡기면 1g:100GPC 페깅 토큰을 빌려준다. (KIP-7 민팅) 
+// 1g:100GPC 페깅 토큰을 갚으면 담보물을 다시 돌려준다. 이후 받은 KIP-7 토큰은 소각.
+// Gold NFT 하나만 취급한다. 팔라듐, 구리 등 다른 RWA 자산은 GPC가 아닌 PCP, CCP 등 다른 컨트랙트가 취급해야 한다.
 
 // GoldType
 // 1: 0.05g

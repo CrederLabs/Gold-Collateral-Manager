@@ -1,9 +1,19 @@
 {
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "clean": "rm -rf ./artifacts ./cache",
+    "deploy": "npx hardhat run scripts/deploy.js",
+    "deploy:baobab": "NETWORK=baobab npx hardhat run scripts/deploy.js",
+    "deploy:cypress": "NETWORK=cypress npx hardhat run scripts/deploy.js"
+  },
+  "author": "amanusk",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "hardhat": "^2.15.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.2"
+    "@openzeppelin/contracts": "^4.9.2",
+    "dotenv": "^16.3.1"
   }
 }
