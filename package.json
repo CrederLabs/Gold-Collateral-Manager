@@ -4,8 +4,8 @@
     "test": "npx hardhat test",
     "clean": "rm -rf ./artifacts ./cache",
     "deploy": "npx hardhat run scripts/deploy.js",
-    "deploy:baobab": "NETWORK=baobab npx hardhat run scripts/deploy.js",
-    "deploy:cypress": "NETWORK=cypress npx hardhat run scripts/deploy.js"
+    "deploy:baobab": "NETWORK=baobab npx hardhat run scripts/deploy.js --network baobab",
+    "deploy:cypress": "NETWORK=cypress npx hardhat run scripts/deploy.js --network cypress"
   },
   "author": "amanusk",
   "devDependencies": {

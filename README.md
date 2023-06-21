@@ -14,5 +14,5 @@ npx hardhat run scripts/deploy.js
 
 ## Contracts
 
-1. Baobab: 
+1. Baobab: 0xC27bD714683974e0599352394C2Cf3b3799136f7
 2. Cypress: 

@@ -193,6 +193,10 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         }
         collateralTokenIds.pop();
     }
+    
+    function getCollateralHistoryByAddress(address account) public view returns(CollateralHistory[] memory) {
+        return userAllCollateralHistory[account];
+    }
 
     function repay(uint256 _tokenId) public whenNotPaused {
         require(collaterals[_tokenId].userAccount == msg.sender, "Not matched userAccount");
