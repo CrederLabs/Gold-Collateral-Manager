@@ -7,28 +7,8 @@
 const hre = require("hardhat");
 
 async function main() {
-  // const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  // const unlockTime = currentTimestampInSeconds + 60;
-
-  // lock 예제
-  // const lockedAmount = hre.ethers.parseEther("0.001");
-  // const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-  //   value: lockedAmount,
-  // });
-
-  // await lock.waitForDeployment();
-
-  // console.log(
-  //   `Lock with ${ethers.formatEther(
-  //     lockedAmount
-  //   )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  // );
-
-  // 
-
   const [owner, otherAccount] = await ethers.getSigners();
   console.log("owner: ", owner.address);
-  // console.log("otherAccount: ", otherAccount);
 
   let tokenId = 1;
   let goldType = 1;
@@ -62,6 +42,10 @@ async function main() {
   let balance = await goldCollateralManager.balanceOf(owner);
   console.log("balance: ", balance + " GPC");
 
+  // 담보 상황 조회
+  let collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
+  console.log("담보 상황 조회: ", collateralTokenIds);
+
   console.log("GPC 상환 및 담보 돌려받기 시작");
 
   await goldCollateralManager.approve(goldCollateralManager.target, balance);
@@ -73,6 +57,9 @@ async function main() {
   // NFT 소유 확인
   let nftOwnerAddress = await devNFT.ownerOf(tokenId);
   console.log("nftOwnerAddress: ", nftOwnerAddress);
+
+  collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
+  console.log("담보 상황 조회: ", collateralTokenIds);
 
 }
 

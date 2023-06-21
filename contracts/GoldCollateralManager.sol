@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -47,22 +46,37 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         uint256 tokenId;
         uint16 goldType;
         CollateralStatus collateralStatus;
+        uint256 timestamp;
     }
+
+    mapping(uint16 => uint256) public collateralExchangeAmount;
 
     /**
      * @dev Mapping of Token Id to collateral data.
      */
     mapping(uint256 => CollateralData) public collaterals;
 
-    // 유저가 갖고 있는 담보물을 쉽게 찾기 위해
+    struct CollateralHistory {
+        address userAccount;
+        uint256 tokenId;
+        uint16 goldType;
+        CollateralStatus collateralStatus;
+        uint256 timestamp;
+    }
+
+    mapping(address => CollateralHistory[]) public userAllCollateralHistory;
+
+    // In order to easily find the collateral that the user has
     mapping(address => uint256[]) public collateralIndexByAddress;
 
-    mapping(uint16 => uint256) public collateralExchangeAmount;
+    // For checking the total number of collateral token ids
+    uint256[] public collateralTokenIds;
 
     /**
      * @dev unit: gram
      */
-    uint256 public totalCollateralGold;
+    uint256 public totalCreatedGold = 0;
+    uint256 public totalBurntGold = 0;
 
     constructor(IERC721 _goldNFTContract) ERC20("Gold Pegged Coin", "GPC") {
         goldNFTContract = _goldNFTContract;
@@ -96,9 +110,10 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
             msg.sender,
             _tokenId,
             goldType,
-            CollateralStatus.RECEIVED
+            CollateralStatus.RECEIVED,
+            block.timestamp
         );
-
+        
         collateralIndexByAddress[msg.sender].push(_tokenId);
 
         uint256 gpcSupplyAmount = collateralExchangeAmount[goldType];
@@ -107,26 +122,79 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         // mint KIP-7(ERC-20)
         _mint(msg.sender, gpcSupplyAmount);
 
-        // TODO: hisotry 조회용 기록 남기기
+        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
+        totalCreatedGold += gpcSupplyAmount;
+        collateralTokenIds.push(_tokenId);
 
-        // TODO: emit event
-        
+        // Leave a record for history inquiry
+        userAllCollateralHistory[msg.sender].push(CollateralHistory(
+            msg.sender,
+            _tokenId,
+            goldType,
+            CollateralStatus.RECEIVED,
+            block.timestamp
+        ));
+
+        emit CreateNewCollateral(msg.sender, _tokenId, goldType, gpcSupplyAmount, CollateralStatus.RECEIVED, block.timestamp);
     }
 
     // goldType 에 따른 교환비는 owner 가 추가 등록
     // 1g -> 100 GPC
     function registerCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount) public onlyOwner {
         collateralExchangeAmount[_goldType] = _gpcAmount;
-        // TODO: emit event
+        emit RegisterCollateralExchangeAmount(_goldType, _gpcAmount);
     }
 
     function deleteCollateralExchangeAmount(uint16 _goldType) public onlyOwner {
         delete collateralExchangeAmount[_goldType];
-        // TODO: emit event
+        emit DeleteCollateralExchangeAmount(_goldType);
     }
 
-    // TODO: find token id
-    // 
+    function findCollateralsByAddress() public view returns (uint256[] memory) {
+        return collateralIndexByAddress[msg.sender];
+    }
+
+    function findCollateralIndexByAddressAndTokenId(uint256 _tokenId) public view returns (uint256) {
+        uint256 length = collateralIndexByAddress[msg.sender].length;
+        uint256 indexOfTokenId;
+        for (uint256 i = 0; i < length; i++) {
+            if (collateralIndexByAddress[msg.sender][i] == _tokenId) {
+                indexOfTokenId = i;
+                break;
+            }
+        }
+        return indexOfTokenId;
+    }
+
+    function removeForCollateralIndexByAddress(address _account, uint256 _index) private {
+        require(_index < collateralIndexByAddress[_account].length, "index out of bound");
+
+        for (uint256 i = _index; i < collateralIndexByAddress[_account].length - 1; i++) {
+            collateralIndexByAddress[_account][i] = collateralIndexByAddress[_account][i + 1];
+        }
+        collateralIndexByAddress[_account].pop();
+    }
+
+    function findCollateralTokenIdsByTokenId(uint256 _tokenId) public view returns (uint256) {
+        uint256 length = collateralTokenIds.length;
+        uint256 indexOfTokenId;
+        for (uint256 i = 0; i < length; i++) {
+            if (collateralTokenIds[i] == _tokenId) {
+                indexOfTokenId = i;
+                break;
+            }
+        }
+        return indexOfTokenId;
+    }
+
+    function removeForCollateralTokenIds(uint256 _index) private {
+        require(_index < collateralTokenIds.length, "index out of bound");
+
+        for (uint256 i = _index; i < collateralTokenIds.length - 1; i++) {
+            collateralTokenIds[i] = collateralTokenIds[i + 1];
+        }
+        collateralTokenIds.pop();
+    }
 
     function repay(uint256 _tokenId) public whenNotPaused {
         require(collaterals[_tokenId].userAccount == msg.sender, "Not matched userAccount");
@@ -138,29 +206,61 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         uint256 gpcRepaymentAmount = collateralExchangeAmount[goldType];
         require(gpcRepaymentAmount > 0, "Invalid gpcRepaymentAmount");
 
-        IERC20(this).transferFrom(msg.sender, address(this), gpcRepaymentAmount);
+        // Burn
+        IERC20(this).transferFrom(msg.sender, 0x000000000000000000000000000000000000dEaD, gpcRepaymentAmount);
         
-        // update 담보 status
-        // collaterals[_tokenId] = CollateralData(
-        //     msg.sender,
-        //     _tokenId,
-        //     goldType,
-        //     CollateralStatus.RECEIVED
-        // );
         collaterals[_tokenId].collateralStatus = CollateralStatus.RETURNED;
+
+        // Delete the collateral information from the user's address
+        uint256 indexOfTokenId = findCollateralIndexByAddressAndTokenId(_tokenId);
+        removeForCollateralIndexByAddress(msg.sender, indexOfTokenId);
         
-        // NFT 돌려주기
+        // Give back NFTs
         goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
 
-        
+        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
+        totalBurntGold += gpcRepaymentAmount;
 
-        // TODO: hisotry 조회용 기록 남기기
+        uint256 indexOfTokenId2 = findCollateralTokenIdsByTokenId(_tokenId);
+        removeForCollateralTokenIds(indexOfTokenId2);
 
-        // TODO: emit event
+        // Leave a record for history inquiry
+        userAllCollateralHistory[msg.sender].push(CollateralHistory(
+            msg.sender,
+            _tokenId,
+            goldType,
+            CollateralStatus.RETURNED,
+            block.timestamp
+        ));
 
+        emit Repay(msg.sender, _tokenId, goldType, gpcRepaymentAmount, CollateralStatus.RETURNED, block.timestamp);
     }
 
+    function getTotalGPCSupply() public view returns(uint256) {
+        return totalCreatedGold - totalBurntGold;
+    }
 
+    function recoverERC20(address _tokenAddress, uint256 _amount) onlyOwner public {
+        IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
+        emit RecoverERC20(_tokenAddress, _amount);
+    }
 
+    function recoverERC721(address _tokenAddress, uint256 _tokenId) onlyOwner public {
+        IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
+        emit RecoverERC721(_tokenAddress, _tokenId);
+    }
 
+    function recoverKLAY() onlyOwner public {
+        payable(msg.sender).transfer(address(this).balance);
+        emit RecoverKLAY(address(this).balance);
+    }
+
+    /* ========== EVENTS ========== */
+    event CreateNewCollateral(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcSupplyAmount, CollateralStatus collateralStatus, uint256 timestamp);
+    event RegisterCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount);
+    event DeleteCollateralExchangeAmount(uint16 _goldType);
+    event Repay(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcRepaymentAmount, CollateralStatus collateralStatus, uint256 timestamp);
+    event RecoverERC20(address _tokenAddress, uint256 _amount);
+    event RecoverERC721(address _tokenAddress, uint256 _tokenId);
+    event RecoverKLAY(uint256 _amount);
 }
