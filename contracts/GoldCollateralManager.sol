@@ -24,6 +24,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // 6: 100g 
 // 7: 200g
 
+// TODO: Roller 추가
+
 interface TheMiningClubInterface {
     function getGoldTypeOfTokenId(uint256 tokenId) external view returns (uint16);
 }
@@ -150,6 +152,10 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
 
     function findCollateralsByAddress() public view returns (uint256[] memory) {
         return collateralIndexByAddress[msg.sender];
+    }
+
+    function getCollateralsLengthByAddress(address _account) public view returns (uint256) {
+        return collateralIndexByAddress[_account].length;
     }
 
     function findCollateralIndexByAddressAndTokenId(uint256 _tokenId) public view returns (uint256) {
