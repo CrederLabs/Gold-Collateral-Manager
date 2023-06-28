@@ -12,7 +12,14 @@ npx hardhat node
 npx hardhat run scripts/deploy.js
 ```
 
+## Deploy
+
+```
+# Baobab 테스트넷 배포
+$ yarn deploy:baobab
+```
+
 ## Contracts
 
-1. Baobab: 0xC27bD714683974e0599352394C2Cf3b3799136f7
+1. Baobab: 0x6D52C156Afc6A6483DEf1cB3c02056e8f5912462
 2. Cypress: 
