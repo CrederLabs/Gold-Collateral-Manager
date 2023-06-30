@@ -49,7 +49,10 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         uint256 timestamp;
     }
 
+    // exchange ratio
     mapping(uint16 => uint256) public collateralExchangeAmount;
+    // repay fee
+    mapping(uint16 => uint256) public repaymentFeeAmount;
 
     /**
      * @dev Mapping of Token Id to collateral data.
@@ -96,6 +99,14 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         collateralExchangeAmount[5] = 5000 * 10**18;
         collateralExchangeAmount[6] = 10000 * 10**18;
         collateralExchangeAmount[7] = 20000 * 10**18;
+        // for repay
+        repaymentFeeAmount[1] = 1 * 10**18;
+        repaymentFeeAmount[2] = 5 * 10**18;
+        repaymentFeeAmount[3] = 10 * 10**18;
+        repaymentFeeAmount[4] = 15 * 10**18;
+        repaymentFeeAmount[5] = 20 * 10**18;
+        repaymentFeeAmount[6] = 25 * 10**18;
+        repaymentFeeAmount[7] = 30 * 10**18;
     }
     
     function createNewCollateral(uint256 _tokenId) public whenNotPaused {
@@ -148,6 +159,16 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
     function deleteCollateralExchangeAmount(uint16 _goldType) public onlyOwner {
         delete collateralExchangeAmount[_goldType];
         emit DeleteCollateralExchangeAmount(_goldType);
+    }
+
+    function registerRepaymentFeeAmount(uint16 _goldType, uint256 _klayAmount) public onlyOwner {
+        repaymentFeeAmount[_goldType] = _klayAmount;
+        emit RegisterRepaymentFeeAmount(_goldType, _klayAmount);
+    }
+
+    function deleteRepaymentFeeAmount(uint16 _goldType) public onlyOwner {
+        delete repaymentFeeAmount[_goldType];
+        emit DeleteRepaymentFeeAmount(_goldType);
     }
 
     function findCollateralsByAddress() public view returns (uint256[] memory) {
@@ -203,8 +224,8 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
     function getCollateralHistoryByAddress(address account) public view returns(CollateralHistory[] memory) {
         return userAllCollateralHistory[account];
     }
-
-    function repay(uint256 _tokenId) public whenNotPaused {
+    
+    function repay(uint256 _tokenId) payable public whenNotPaused {
         require(collaterals[_tokenId].userAccount == msg.sender, "Not matched userAccount");
         require(collaterals[_tokenId].collateralStatus == CollateralStatus.RECEIVED, "No received collateral");
 
@@ -214,6 +235,15 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         uint256 gpcRepaymentAmount = collateralExchangeAmount[goldType];
         require(gpcRepaymentAmount > 0, "Invalid gpcRepaymentAmount");
 
+        // 0.05g: 1 KLAY
+        // 1g: 5 KLAY
+        // 5g: 10 KLAY
+        // 10g: 15 KLAY
+        // 50g: 20 KLAY
+        // 100g: 25 KLAY
+        // 200g: 30 KLAY
+        require(msg.value == repaymentFeeAmount[goldType], "Insufficient KLAY Fee"); 
+        
         // Burn
         IERC20(this).transferFrom(msg.sender, 0x000000000000000000000000000000000000dEaD, gpcRepaymentAmount);
         
@@ -267,6 +297,8 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
     event CreateNewCollateral(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcSupplyAmount, CollateralStatus collateralStatus, uint256 timestamp);
     event RegisterCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount);
     event DeleteCollateralExchangeAmount(uint16 _goldType);
+    event RegisterRepaymentFeeAmount(uint16 _goldType, uint256 _klayAmount);
+    event DeleteRepaymentFeeAmount(uint16 _goldType);
     event Repay(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcRepaymentAmount, CollateralStatus collateralStatus, uint256 timestamp);
     event RecoverERC20(address _tokenAddress, uint256 _amount);
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
