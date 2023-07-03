@@ -1,5 +1,7 @@
 # Gold Collateral Manager
 
+![img-nft-005g](https://github.com/CrederLabs/Gold-Collateral-Manager/assets/34641838/3b235317-a1ca-4b89-8c69-cadfb3997a25)
+
 Try running some of the following tasks:
 
 ```shell
