@@ -137,7 +137,9 @@ describe("GoldCollateralManager", function () {
             await goldCollateralManager.createNewCollateral(tokenId);
 
             await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
-            await goldCollateralManager.repay(tokenId);
+            await goldCollateralManager.repay(tokenId, {
+                value: "1000000000000000000"
+            });
 
             let resultCollaterals = await goldCollateralManager.collaterals(tokenId);
 
@@ -151,7 +153,9 @@ describe("GoldCollateralManager", function () {
             await goldCollateralManager.createNewCollateral(tokenId);
 
             await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
-            await goldCollateralManager.repay(tokenId);
+            await goldCollateralManager.repay(tokenId, {
+                value: "1000000000000000000"
+            });
             
             expect(await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD")).to.equal("5000000000000000000");
         });
@@ -163,7 +167,9 @@ describe("GoldCollateralManager", function () {
             await goldCollateralManager.createNewCollateral(tokenId);
 
             await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
-            await goldCollateralManager.repay(tokenId);
+            await goldCollateralManager.repay(tokenId, {
+                value: "1000000000000000000"
+            });
 
             expect(await devNFT.ownerOf(tokenId)).to.equal(owner.address);
         });
@@ -175,7 +181,9 @@ describe("GoldCollateralManager", function () {
             await goldCollateralManager.createNewCollateral(tokenId);
 
             await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
-            await goldCollateralManager.repay(tokenId);
+            await goldCollateralManager.repay(tokenId, {
+                value: "1000000000000000000"
+            });
 
             let resultCollaterals = await goldCollateralManager.findCollateralsByAddress();
 
