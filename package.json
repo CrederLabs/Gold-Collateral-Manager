@@ -7,7 +7,7 @@
     "deploy:baobab": "NETWORK=baobab npx hardhat run scripts/deploy.js --network baobab",
     "deploy:cypress": "NETWORK=cypress npx hardhat run scripts/deploy.js --network cypress"
   },
-  "author": "amanusk",
+  "author": "Creder",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "hardhat": "^2.15.0"
