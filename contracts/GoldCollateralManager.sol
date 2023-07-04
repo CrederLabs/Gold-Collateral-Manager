@@ -11,9 +11,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// 역할: MCGB NFT를 담보로 맡기면 1g:100GPC 페깅 토큰을 빌려준다. (KIP-7 민팅) 
-// 1g:100GPC 페깅 토큰을 갚으면 담보물을 다시 돌려준다. 이후 받은 KIP-7 토큰은 소각.
-// Gold NFT 하나만 취급한다. 팔라듐, 구리 등 다른 RWA 자산은 GPC가 아닌 PCP, CCP 등 다른 컨트랙트가 취급해야 한다.
+// If MCGB NFT is deposited as collateral, 1g:100GPC pegged tokens are issued. (KIP-7 minting)
+// If you pay off the 1g:100 GPC pegged token, you will get your collateral back. KIP-7 tokens received after that will be burned.
+// Only one Gold NFT is dealt with. Other RWA assets such as palladium and copper should be handled by other contracts such as PCP and CCP, not GPC.
 
 // GoldType
 // 1: 0.05g
@@ -23,8 +23,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // 5: 50g
 // 6: 100g 
 // 7: 200g
-
-// TODO: Roller 추가
 
 interface TheMiningClubInterface {
     function getGoldTypeOfTokenId(uint256 tokenId) external view returns (uint16);
@@ -149,7 +147,6 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         emit CreateNewCollateral(msg.sender, _tokenId, goldType, gpcSupplyAmount, CollateralStatus.RECEIVED, block.timestamp);
     }
 
-    // goldType 에 따른 교환비는 owner 가 추가 등록
     // 1g -> 100 GPC
     function registerCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount) public onlyOwner {
         collateralExchangeAmount[_goldType] = _gpcAmount;
