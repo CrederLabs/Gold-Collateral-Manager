@@ -5,11 +5,9 @@ pragma solidity ^0.8.9;
 // import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // If MCGB NFT is deposited as collateral, 1g:100GPC pegged tokens are issued. (KIP-7 minting)
 // If you pay off the 1g:100 GPC pegged token, you will get your collateral back. KIP-7 tokens received after that will be burned.
@@ -571,31 +569,12 @@ contract ERC20 is Context, IERC20 {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 interface TheMiningClubInterface {
     function getGoldTypeOfTokenId(uint256 tokenId) external view returns (uint16);
 }
 
-contract GoldCollateralManager is ERC20, Ownable, Pausable {
-    // using SafeERC20 for IERC20;
+contract GoldCollateralManager is ERC20, Ownable, AccessControl, Pausable {
+    bytes32 public constant PHYSICAL_GOLD_MINTER_ROLE = keccak256("PHYSICAL_GOLD_MINTER_ROLE");
 
     IERC721 public immutable goldNFTContract;
 
@@ -643,9 +622,31 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
      * @dev unit: GPC(wei)
      */
     uint256 public totalCreatedGold = 0;
-    uint256 public totalBurntGold = 0;
+    uint256 public totalBurnedGold = 0;
+
+    // ----------------------- Physical Gold -----------------------
+
+    /**
+    * @dev unit: GPC(wei)
+    */
+    uint256 public totalCreatedPhysicalGold = 0;
+    uint256 public totalBurnedPhysicalGold = 0;
+
+    struct PhysicalGoldHistory {
+        address physicalGoldMinter;
+        address userAccount;
+        uint256 gpcAmount;
+        uint256 timestamp;
+    }
+
+    mapping(address => PhysicalGoldHistory[]) public mintAllPhysicalGoldHistory;
+    mapping(address => PhysicalGoldHistory[]) public burnAllPhysicalGoldHistory;
 
     constructor(IERC721 _goldNFTContract) ERC20("Gold Pegged Coin", "GPC") {
+        // Grant the contract deployer the default admin role: it will be able
+        // to grant and revoke any roles
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
         goldNFTContract = _goldNFTContract;
 
         // * (1g -> 100 GPC)
@@ -672,18 +673,6 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         repaymentFeeAmount[6] = 25 * 10**18;
         repaymentFeeAmount[7] = 30 * 10**18;
     }
-
-    // // On-Chain Transaction fees
-    // function transfer(address to, uint256 amount) override public payable returns (bool) {
-
-    // }
-
-    // function transferFrom(address to, uint256 amount) override public payable returns (bool) {
-        
-    // }
-
-    // ERC20 을 포함해야함
-
 
     // ---------------------------------- Gold NFT ----------------------------------
     
@@ -834,7 +823,7 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
         goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
 
         // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
-        totalBurntGold += gpcRepaymentAmount;
+        totalBurnedGold += gpcRepaymentAmount;
 
         uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
         removeForCollateralTokenIds(indexOfTokenId2);
@@ -852,7 +841,52 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
     }
 
     function getTotalGPCSupply() public view returns(uint256) {
-        return totalCreatedGold - totalBurntGold;
+        return totalCreatedGold - totalBurnedGold;
+    }
+
+    // ---------------------------------- Physical Gold ----------------------------------
+    
+    function addPhysicalGoldMinter(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(PHYSICAL_GOLD_MINTER_ROLE, _account);
+    }
+
+    function deletePhysicalGoldMinter(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(PHYSICAL_GOLD_MINTER_ROLE, _account);
+    }
+
+    function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
+        require(_gpcAmount > 0, "Invalid _gpcAmount");
+
+        _mint(_recipient, _gpcAmount);
+
+        totalCreatedPhysicalGold += _gpcAmount;
+        mintAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
+            msg.sender,
+            _recipient,
+            _gpcAmount,
+            block.timestamp
+        ));
+        emit MintBackedByPhysicalGold(msg.sender, _gpcAmount, block.timestamp);
+    }
+
+    function burnBackedByPhysicalGold(uint256 _gpcAmount) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
+        require(_gpcAmount > 0, "Invalid _gpcAmount");
+
+        // Burn
+        IERC20(this).transferFrom(msg.sender, 0x000000000000000000000000000000000000dEaD, _gpcAmount);
+
+        totalBurnedPhysicalGold += _gpcAmount;
+        burnAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
+            msg.sender,
+            address(0),
+            _gpcAmount,
+            block.timestamp
+        ));
+        emit BurnBackedByPhysicalGold(msg.sender, _gpcAmount, block.timestamp);
+    }
+
+    function getPhysicalGoldTotalSupply() public view returns(uint256) {
+        return totalCreatedPhysicalGold - totalBurnedPhysicalGold;
     }
 
     function recoverERC20(address _tokenAddress, uint256 _amount) public onlyOwner {
@@ -877,6 +911,8 @@ contract GoldCollateralManager is ERC20, Ownable, Pausable {
     event RegisterRepaymentFeeAmount(uint16 _goldType, uint256 _klayAmount);
     event DeleteRepaymentFeeAmount(uint16 _goldType);
     event Repay(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcRepaymentAmount, CollateralStatus collateralStatus, uint256 timestamp);
+    event MintBackedByPhysicalGold(address account, uint256 gpcAmount, uint256 timestamp);
+    event BurnBackedByPhysicalGold(address account, uint256 gpcAmount, uint256 timestamp);
     event RecoverERC20(address _tokenAddress, uint256 _amount);
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
     event RecoverKLAY(uint256 _amount);

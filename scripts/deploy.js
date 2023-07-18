@@ -78,7 +78,7 @@ async function main() {
 
     // ------------------------------ On Chain Transaction Fee ------------------------------
     await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
-    
+
     let balance1 = await goldCollateralManager.balanceOf(owner);
     console.log("owner balance: ", balance1 + " GPC");
 
@@ -118,6 +118,10 @@ async function main() {
 
     // collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
     // console.log("담보 상황 조회: ", collateralTokenIds);
+
+    // ------------------------------ Physical Gold ------------------------------
+    let physicalGoldTotalSupply = await goldCollateralManager.getPhysicalGoldTotalSupply();
+    console.log("physicalGoldTotalSupply: ", physicalGoldTotalSupply);
   }
   // ------------ Localhost Test: run functions END ------------
 }
