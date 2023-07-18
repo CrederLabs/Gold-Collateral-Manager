@@ -903,7 +903,7 @@ contract GoldCollateralManager is ERC20, AccessControl, Pausable {
         totalBurnedPhysicalGold += _gpcAmount;
         burnAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
-            address(0),
+            address(0x000000000000000000000000000000000000dEaD),
             _gpcAmount,
             block.timestamp
         ));

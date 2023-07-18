@@ -206,4 +206,41 @@ describe("GoldCollateralManager", function () {
             expect(parseInt(resultCollaterals.length)).to.equal(0);
         });
     });
+
+    describe("UserLock", function () {
+        it("LockUser should not transfer GPC", async function () {
+            const { devNFT, goldCollateralManager, tokenId, owner, otherAccount } = await loadFixture(deployFixture);
+
+            await devNFT.approve(goldCollateralManager.target, tokenId);
+            await goldCollateralManager.createNewCollateral(tokenId);
+            await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
+
+            await goldCollateralManager.lockUser(owner);
+            await expect(goldCollateralManager.transfer(otherAccount, "1000000000000000000")).to.be.reverted;
+
+            await goldCollateralManager.unlockUser(owner);
+            await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
+            expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("1999600000000000000");
+        });
+    });
+
+    describe("Physical Gold", function () {
+        it("Only minter should mint GPC", async function () {
+            const { goldCollateralManager, owner, otherAccount } = await loadFixture(deployFixture);
+
+            await expect(goldCollateralManager.mintBackedByPhysicalGold("7000000000000000000", otherAccount)).to.be.reverted;
+
+            await goldCollateralManager.addPhysicalGoldMinter(owner);
+            await goldCollateralManager.mintBackedByPhysicalGold("7000000000000000000", otherAccount);
+            expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("7000000000000000000");
+
+            // burn
+            await goldCollateralManager.mintBackedByPhysicalGold("7000000000000000000", owner);
+            await goldCollateralManager.approve(goldCollateralManager.target, "5000000000000000000");
+            await goldCollateralManager.burnBackedByPhysicalGold("5000000000000000000");
+
+            await goldCollateralManager.deletePhysicalGoldMinter(owner);
+            await expect(goldCollateralManager.mintBackedByPhysicalGold("2000000000000000000", otherAccount)).to.be.reverted;
+        });
+    });
 });
