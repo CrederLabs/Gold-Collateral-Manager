@@ -256,9 +256,34 @@ library SafeMath {
     }
 }
 
+// ----------------------------------------------------------------------------
+// Limit users in blacklist
+// ----------------------------------------------------------------------------
+contract UserLock is Ownable {
+    mapping(address => bool) blacklist;
+        
+    event LockUser(address indexed who);
+    event UnlockUser(address indexed who);
+
+    modifier permissionCheck {
+        require(!blacklist[msg.sender], "Blocked user");
+        _;
+    }
+    
+    function lockUser(address who) public onlyOwner {
+        blacklist[who] = true;
+        
+        emit LockUser(who);
+    }
+
+    function unlockUser(address who) public onlyOwner {
+        blacklist[who] = false;
+        
+        emit UnlockUser(who);
+    }
+}
+
 // File: @openzeppelin/contracts/token/ERC20/ERC20.sol
-
-
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -284,7 +309,7 @@ library SafeMath {
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20 {
+contract ERC20 is Context, IERC20, UserLock {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -462,7 +487,7 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual permissionCheck {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -573,7 +598,7 @@ interface TheMiningClubInterface {
     function getGoldTypeOfTokenId(uint256 tokenId) external view returns (uint16);
 }
 
-contract GoldCollateralManager is ERC20, Ownable, AccessControl, Pausable {
+contract GoldCollateralManager is ERC20, AccessControl, Pausable {
     bytes32 public constant PHYSICAL_GOLD_MINTER_ROLE = keccak256("PHYSICAL_GOLD_MINTER_ROLE");
 
     IERC721 public immutable goldNFTContract;
