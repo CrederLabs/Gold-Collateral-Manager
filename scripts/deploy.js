@@ -76,48 +76,36 @@ async function main() {
     let collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
     console.log("담보 상황 조회: ", collateralTokenIds);
 
-    // ------------------------------ On Chain Transaction Fee ------------------------------
-    await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
-
-    let balance1 = await goldCollateralManager.balanceOf(owner);
-    console.log("owner balance: ", balance1 + " GPC");
-
-    let balance2 = await goldCollateralManager.balanceOf(otherAccount);
-    console.log("otherAccount balance: ", balance2 + " GPC");
-
-    let balance3 = await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD");
-    console.log("null balance: ", balance3 + " GPC");
-
     // ------------------------------ Repay ------------------------------
-    // console.log("GPC 상환 및 담보 돌려받기 시작");
+    console.log("GPC 상환 및 담보 돌려받기 시작");
 
-    // // const balance0ETH = await provider.getBalance(user1.address);
-    // let userEthBalance = await hre.ethers.provider.getBalance(owner);
-    // console.log("userEthBalance1: ", userEthBalance + " KLAY");
-    // let goldCollateralManagerEthBalance = await hre.ethers.provider.getBalance(goldCollateralManager);
-    // console.log("goldCollateralManagerEthBalance1: ", goldCollateralManagerEthBalance + " KLAY");
+    // const balance0ETH = await provider.getBalance(user1.address);
+    let userEthBalance = await hre.ethers.provider.getBalance(owner);
+    console.log("userEthBalance1: ", userEthBalance + " KLAY");
+    let goldCollateralManagerEthBalance = await hre.ethers.provider.getBalance(goldCollateralManager);
+    console.log("goldCollateralManagerEthBalance1: ", goldCollateralManagerEthBalance + " KLAY");
 
     // await goldCollateralManager.approve(goldCollateralManager.target, balance);
-    // // await goldCollateralManager.repay(tokenId);
-    // await goldCollateralManager.repay(tokenId, {
-    //   value: "1000000000000000000"
-    // });
+    // await goldCollateralManager.repay(tokenId);
+    await goldCollateralManager.repay(tokenId, {
+      value: "1000000000000000000"
+    });
 
-    // balance = await goldCollateralManager.balanceOf(owner);
-    // console.log("balance: ", balance + " GPC");
+    balance = await goldCollateralManager.balanceOf(owner);
+    console.log("balance: ", balance + " GPC");
 
-    // // const balance0ETH = await provider.getBalance(user1.address);
-    // userEthBalance = await hre.ethers.provider.getBalance(owner);
-    // console.log("userEthBalance2: ", userEthBalance + " KLAY");
-    // goldCollateralManagerEthBalance = await hre.ethers.provider.getBalance(goldCollateralManager);
-    // console.log("goldCollateralManagerEthBalance2: ", goldCollateralManagerEthBalance + " KLAY");
+    // const balance0ETH = await provider.getBalance(user1.address);
+    userEthBalance = await hre.ethers.provider.getBalance(owner);
+    console.log("userEthBalance2: ", userEthBalance + " KLAY");
+    goldCollateralManagerEthBalance = await hre.ethers.provider.getBalance(goldCollateralManager);
+    console.log("goldCollateralManagerEthBalance2: ", goldCollateralManagerEthBalance + " KLAY");
 
-    // // NFT 소유 확인
-    // let nftOwnerAddress = await devNFT.ownerOf(tokenId);
-    // console.log("nftOwnerAddress: ", nftOwnerAddress);
+    // NFT 소유 확인
+    let nftOwnerAddress = await devNFT.ownerOf(tokenId);
+    console.log("nftOwnerAddress: ", nftOwnerAddress);
 
-    // collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
-    // console.log("담보 상황 조회: ", collateralTokenIds);
+    collateralTokenIds = await goldCollateralManager.findCollateralsByAddress();
+    console.log("담보 상황 조회: ", collateralTokenIds);
 
     // ------------------------------ Physical Gold ------------------------------
     let physicalGoldTotalSupply = await goldCollateralManager.getPhysicalGoldTotalSupply();

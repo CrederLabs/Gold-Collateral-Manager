@@ -172,6 +172,10 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         super._transfer(sender, recipient, principle);
     }
 
+    function setOnChainTransactionFee(uint24 _onChainTransactionfee) public onlyOwner {
+        onChainTransactionfee = _onChainTransactionfee;
+    }
+
     // ---------------------------------- Gold NFT ----------------------------------
     
     function createNewCollateral(uint256 _tokenId) public whenNotPaused {
