@@ -173,7 +173,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function setOnChainTransactionFee(uint24 _onChainTransactionfee) public onlyOwner {
-        require(_onChainTransactionfee >= 0, "Invalid _onChainTransactionfee");
+        require(_onChainTransactionfee >= 0 && _onChainTransactionfee <= 1000000, "Invalid _onChainTransactionfee");
         onChainTransactionfee = _onChainTransactionfee;
     }
 
