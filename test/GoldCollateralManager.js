@@ -224,7 +224,7 @@ describe("GoldCollateralManager", function () {
     });
 
     describe("Physical Gold", function () {
-        it("Only minter should mint GPC", async function () {
+        it("Only minter should mint and burn GPC", async function () {
             const { goldCollateralManager, owner, otherAccount } = await loadFixture(deployFixture);
 
             await expect(goldCollateralManager.mintBackedByPhysicalGold("7000000000000000000", otherAccount)).to.be.reverted;
@@ -235,8 +235,8 @@ describe("GoldCollateralManager", function () {
 
             // burn
             await goldCollateralManager.mintBackedByPhysicalGold("7000000000000000000", owner);
-            await goldCollateralManager.approve(goldCollateralManager.target, "5000000000000000000");
             await goldCollateralManager.burnBackedByPhysicalGold("5000000000000000000");
+            expect(await goldCollateralManager.balanceOf(owner)).to.equal("2000000000000000000");
 
             await goldCollateralManager.deletePhysicalGoldMinter(owner);
             await expect(goldCollateralManager.mintBackedByPhysicalGold("2000000000000000000", otherAccount)).to.be.reverted;

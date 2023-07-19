@@ -173,6 +173,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function setOnChainTransactionFee(uint24 _onChainTransactionfee) public onlyOwner {
+        require(_onChainTransactionfee >= 0, "Invalid _onChainTransactionfee");
         onChainTransactionfee = _onChainTransactionfee;
     }
 
@@ -375,13 +376,12 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     function burnBackedByPhysicalGold(uint256 _gpcAmount) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_gpcAmount > 0, "Invalid _gpcAmount");
 
-        // Burn
-        IERC20(this).transferFrom(msg.sender, 0x000000000000000000000000000000000000dEaD, _gpcAmount);
+        _burn(msg.sender, _gpcAmount);
 
         totalBurnedPhysicalGold += _gpcAmount;
         burnAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
-            address(0x000000000000000000000000000000000000dEaD),
+            address(0),
             _gpcAmount,
             block.timestamp
         ));
