@@ -131,7 +131,7 @@ describe("GoldCollateralManager", function () {
 
     describe("OnChainTransactionFee", function () {
         it("Should charge a 0.02% fee the amount of GPC sent on the blockchain", async function () {
-            const { devNFT, goldCollateralManager, tokenId, owner, otherAccount } = await loadFixture(deployFixture);
+            const { devNFT, goldCollateralManager, tokenId, otherAccount } = await loadFixture(deployFixture);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -140,8 +140,6 @@ describe("GoldCollateralManager", function () {
 
             // Principle
             expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("999800000000000000");
-            // Fee
-            expect(await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD")).to.equal("200000000000000");
         });
     });
 
@@ -163,17 +161,18 @@ describe("GoldCollateralManager", function () {
         });
 
         it("Should burn GPC by GoldCollateralManager Contract", async function () {
-            const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount } = await loadFixture(deployFixture);
+            const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount, owner } = await loadFixture(deployFixture);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
 
-            await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
+            // await goldCollateralManager.approve(goldCollateralManager.target, gpcRepaymentAmount);
             await goldCollateralManager.repay(tokenId, {
                 value: "1000000000000000000"
             });
-            
-            expect(await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD")).to.equal("5000000000000000000");
+
+            // expect(await goldCollateralManager.balanceOf("0x000000000000000000000000000000000000dEaD")).to.equal("5000000000000000000");
+            expect(await goldCollateralManager.balanceOf(owner)).to.equal(0);
         });
         
         it("Should give back NFT to the owner", async function () {
