@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -64,6 +62,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
     // On-Chain Transaction fees(Decimals: 6): 200 -> 0.02%, 195 -> 0.0195%, 10000 -> 1%
     uint24 public onChainTransactionfee = 200;
+    address public feeReceiver;
 
     enum CollateralStatus {
         WAITING,
@@ -134,6 +133,8 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         // to grant and revoke any roles
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
+        feeReceiver = msg.sender;
+
         goldNFTContract = _goldNFTContract;
 
         // * (1g -> 100 GPC)
@@ -161,12 +162,18 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         repaymentFeeAmount[7] = 30 * 10**18;
     }
 
+    function setFeeReceiver(address _newFeeReceiver) public onlyOwner {
+        require(_newFeeReceiver != address(0), "Invalid _newFeeReceiver address");
+        emit SetFeeReceiver(feeReceiver, _newFeeReceiver);
+        feeReceiver = _newFeeReceiver;
+    }
+
     function _transfer(address sender, address recipient, uint256 amount) internal virtual override permissionCheck {
         uint256 fee = amount * onChainTransactionfee / 1000000;
         uint256 principle = amount - fee;
 
         if (fee > 0) {
-            _burn(sender, fee);
+            _transfer(sender, feeReceiver, fee);
             emit OnChainTransactionFeeTransfer(sender, fee);
         }
         super._transfer(sender, recipient, principle);
@@ -221,6 +228,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
     // 1g -> 100 GPC
     function registerCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount) public onlyOwner {
+        require(_gpcAmount > 0, "Invalid _gpcAmount");
         collateralExchangeAmount[_goldType] = _gpcAmount;
         emit RegisterCollateralExchangeAmount(_goldType, _gpcAmount);
     }
@@ -231,6 +239,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function registerRepaymentFeeAmount(uint16 _goldType, uint256 _klayAmount) public onlyOwner {
+        require(_klayAmount > 0, "Invalid _klayAmount");
         repaymentFeeAmount[_goldType] = _klayAmount;
         emit RegisterRepaymentFeeAmount(_goldType, _klayAmount);
     }
@@ -420,4 +429,5 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
     event RecoverKLAY(uint256 _amount);
     event OnChainTransactionFeeTransfer(address indexed from, uint256 value);
+    event SetFeeReceiver(address indexed oldFeeReceiver, address indexed newFeeReceiver);
 }
