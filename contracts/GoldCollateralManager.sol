@@ -162,6 +162,14 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         repaymentFeeAmount[7] = 30 * 10**18;
     }
 
+    function addAdminRole(address _account) public onlyOwner() {
+        _grantRole(DEFAULT_ADMIN_ROLE, _account);
+    }
+
+    function deleteAdminRole(address _account) public onlyOwner() {
+        _revokeRole(DEFAULT_ADMIN_ROLE, _account);
+    }
+
     function setFeeReceiver(address _newFeeReceiver) public onlyOwner {
         require(_newFeeReceiver != address(0), "Invalid _newFeeReceiver address");
         emit SetFeeReceiver(feeReceiver, _newFeeReceiver);
