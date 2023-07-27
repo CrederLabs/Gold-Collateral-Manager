@@ -141,7 +141,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         // 1: 0.05g -> 5 GPC
         // 2: 1g -> 100 GPC
         // 3: 5g -> 500 GPC
-        // 4: 10g -> 1000 GPC;
+        // 4: 10g -> 1000 GPC
         // 5: 50g -> 5000 GPC
         // 6: 100g -> 10000 GPC
         // 7: 200g -> 20000 GPC
@@ -330,24 +330,22 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         // 200g: 30 KLAY
         require(msg.value == repaymentFeeAmount[goldType], "Insufficient KLAY Fee"); 
         
-        // Burn
-        // IERC20(this).transferFrom(msg.sender, 0x000000000000000000000000000000000000dEaD, gpcRepaymentAmount);
         _burn(msg.sender, gpcRepaymentAmount);
-        
+
         collaterals[_tokenId].collateralStatus = CollateralStatus.RETURNED;
 
         // Delete the collateral information from the user's address
         uint256 indexOfTokenId = findCollateralIndexByAddressAndTokenId(_tokenId);
         removeForCollateralIndexByAddress(msg.sender, indexOfTokenId);
+
+        uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
+        removeForCollateralTokenIds(indexOfTokenId2);
         
         // Give back NFTs
         goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
 
         // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
         totalBurnedGold += gpcRepaymentAmount;
-
-        uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
-        removeForCollateralTokenIds(indexOfTokenId2);
 
         // Leave a record for history inquiry
         userAllCollateralHistory[msg.sender].push(CollateralHistory(
@@ -376,8 +374,9 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
+        require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
-
+        
         _mint(_recipient, _gpcAmount);
 
         totalCreatedPhysicalGold += _gpcAmount;
@@ -425,12 +424,12 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     /* ========== EVENTS ========== */
-    event CreateNewCollateral(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcSupplyAmount, CollateralStatus collateralStatus, uint256 timestamp);
+    event CreateNewCollateral(address indexed userAccount, uint256 tokenId, uint16 goldType, uint256 gpcSupplyAmount, CollateralStatus collateralStatus, uint256 timestamp);
     event RegisterCollateralExchangeAmount(uint16 _goldType, uint256 _gpcAmount);
     event DeleteCollateralExchangeAmount(uint16 _goldType);
     event RegisterRepaymentFeeAmount(uint16 _goldType, uint256 _klayAmount);
     event DeleteRepaymentFeeAmount(uint16 _goldType);
-    event Repay(address userAccount, uint256 tokenId, uint16 goldType, uint256 gpcRepaymentAmount, CollateralStatus collateralStatus, uint256 timestamp);
+    event Repay(address indexed userAccount, uint256 tokenId, uint16 goldType, uint256 gpcRepaymentAmount, CollateralStatus collateralStatus, uint256 timestamp);
     event MintBackedByPhysicalGold(address account, uint256 gpcAmount, uint256 timestamp);
     event BurnBackedByPhysicalGold(address account, uint256 gpcAmount, uint256 timestamp);
     event RecoverERC20(address _tokenAddress, uint256 _amount);
