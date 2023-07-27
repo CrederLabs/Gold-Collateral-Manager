@@ -129,23 +129,6 @@ describe("GoldCollateralManager", function () {
         });
     });
 
-    describe("OnChainTransactionFee", function () {
-        it("Should charge a 0.02% fee the amount of GPC sent on the blockchain", async function () {
-            const { devNFT, goldCollateralManager, tokenId, owner, otherAccount } = await loadFixture(deployFixture);
-
-            await devNFT.approve(goldCollateralManager.target, tokenId);
-            await goldCollateralManager.createNewCollateral(tokenId);
-
-            await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
-
-            // owner balance + fee
-            expect(await goldCollateralManager.balanceOf(owner)).to.equal("4000200000000000000");
-
-            // Principle
-            expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("999800000000000000");
-        });
-    });
-
     describe("Repay", function () {
         it("Should be CollateralStatus.RETURNED", async function () {
             const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount, COLLATERAL_STATUS_RETURNED } = await loadFixture(deployFixture);
@@ -222,7 +205,8 @@ describe("GoldCollateralManager", function () {
 
             await goldCollateralManager.unlockUser(owner);
             await goldCollateralManager.transfer(otherAccount, "1000000000000000000");
-            expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("1999600000000000000");
+
+            expect(await goldCollateralManager.balanceOf(otherAccount)).to.equal("2000000000000000000");
         });
     });
 

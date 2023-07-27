@@ -61,8 +61,8 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     IERC721 public immutable goldNFTContract;
 
     // On-Chain Transaction fees(Decimals: 6): 200 -> 0.02%, 195 -> 0.0195%, 10000 -> 1%
-    uint24 public onChainTransactionfee = 200;
-    address public feeReceiver;
+    // uint24 public onChainTransactionfee = 200;
+    // address public feeReceiver;
 
     enum CollateralStatus {
         WAITING,
@@ -133,7 +133,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         // to grant and revoke any roles
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        feeReceiver = msg.sender;
+        // feeReceiver = msg.sender;
 
         goldNFTContract = _goldNFTContract;
 
@@ -170,26 +170,8 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         _revokeRole(DEFAULT_ADMIN_ROLE, _account);
     }
 
-    function setFeeReceiver(address _newFeeReceiver) public onlyOwner {
-        require(_newFeeReceiver != address(0), "Invalid _newFeeReceiver address");
-        emit SetFeeReceiver(feeReceiver, _newFeeReceiver);
-        feeReceiver = _newFeeReceiver;
-    }
-
     function _transfer(address sender, address recipient, uint256 amount) internal virtual override permissionCheck {
-        uint256 fee = amount * onChainTransactionfee / 1000000;
-        uint256 principle = amount - fee;
-
-        if (fee > 0) {
-            _transfer(sender, feeReceiver, fee);
-            emit OnChainTransactionFeeTransfer(sender, fee);
-        }
-        super._transfer(sender, recipient, principle);
-    }
-
-    function setOnChainTransactionFee(uint24 _onChainTransactionfee) public onlyOwner {
-        require(_onChainTransactionfee >= 0 && _onChainTransactionfee <= 1000000, "Invalid _onChainTransactionfee");
-        onChainTransactionfee = _onChainTransactionfee;
+        super._transfer(sender, recipient, amount);
     }
 
     // ---------------------------------- Gold NFT ----------------------------------
@@ -376,7 +358,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
-        
+
         _mint(_recipient, _gpcAmount);
 
         totalCreatedPhysicalGold += _gpcAmount;
@@ -435,6 +417,4 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     event RecoverERC20(address _tokenAddress, uint256 _amount);
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
     event RecoverKLAY(uint256 _amount);
-    event OnChainTransactionFeeTransfer(address indexed from, uint256 value);
-    event SetFeeReceiver(address indexed oldFeeReceiver, address indexed newFeeReceiver);
 }
