@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // If MCGB NFT is deposited as collateral, 1g:100GPC pegged tokens are issued. (KIP-7 minting)
 // If you pay off the 1g:100 GPC pegged token, you will get your collateral back. KIP-7 tokens received after that will be burned.
@@ -56,6 +57,8 @@ contract UserLock is Ownable {
 }
 
 contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant PHYSICAL_GOLD_MINTER_ROLE = keccak256("PHYSICAL_GOLD_MINTER_ROLE");
 
     IERC721 public immutable goldNFTContract;
@@ -375,7 +378,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function recoverERC20(address _tokenAddress, uint256 _amount) public onlyOwner {
-        IERC20(_tokenAddress).transfer(msg.sender, _amount);
+        IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
         emit RecoverERC20(_tokenAddress, _amount);
     }
 
