@@ -115,12 +115,13 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     mapping(address => PhysicalGoldHistory[]) public mintAllPhysicalGoldHistory;
     mapping(address => PhysicalGoldHistory[]) public burnAllPhysicalGoldHistory;
 
+    // 1kg
+    uint256 public maxMintingAmount = 100000 * 10**18;
+
     constructor(IERC721 _goldNFTContract) ERC20("Gold Pegged Coin", "GPC") {
         // Grant the contract deployer the default admin role: it will be able
         // to grant and revoke any roles
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
-        // feeReceiver = msg.sender;
 
         goldNFTContract = _goldNFTContract;
 
@@ -235,11 +236,11 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         emit DeleteRepaymentFeeAmount(_goldType);
     }
 
-    function findCollateralsByAddress() public view returns (uint256[] memory) {
+    function findCollateralsByAddress() external view returns (uint256[] memory) {
         return collateralIndexByAddress[msg.sender];
     }
 
-    function getCollateralsLengthByAddress(address _account) public view returns (uint256) {
+    function getCollateralsLengthByAddress(address _account) external view returns (uint256) {
         return collateralIndexByAddress[_account].length;
     }
 
@@ -334,10 +335,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         emit Repay(msg.sender, _tokenId, goldType, gpcRepaymentAmount, CollateralStatus.RETURNED, block.timestamp);
     }
 
-    // function getTotalGPCSupply() public view returns(uint256) {
-    //     return totalCreatedGold - totalBurnedGold;
-    // }
-
     // ---------------------------------- Physical Gold ----------------------------------
     
     function addPhysicalGoldMinter(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -348,9 +345,16 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         _revokeRole(PHYSICAL_GOLD_MINTER_ROLE, _account);
     }
 
+    function setMaxMintingAmount(uint256 _maxMintingAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_maxMintingAmount > 0, "Invalid _maxMintingAmount");
+        maxMintingAmount = _maxMintingAmount;
+        emit SetMaxMintingAmount(maxMintingAmount);
+    }
+
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
+        require(_gpcAmount <= maxMintingAmount, "_gpcAmount should be lower than maxMintingAmount or equal maxMintingAmount.");
 
         _mint(_recipient, _gpcAmount);
 
@@ -383,6 +387,8 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function recoverERC721(address _tokenAddress, uint256 _tokenId) public onlyOwner {
+        require(_tokenAddress == address(goldNFTContract), "_tokenAddress is not goldNFTContract address.");
+
         IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
         emit RecoverERC721(_tokenAddress, _tokenId);
     }
@@ -404,4 +410,5 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     event RecoverERC20(address _tokenAddress, uint256 _amount);
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
     event RecoverKLAY(uint256 _amount);
+    event SetMaxMintingAmount(uint256 _maxMintingAmount);
 }
