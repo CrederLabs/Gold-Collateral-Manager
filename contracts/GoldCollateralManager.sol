@@ -60,10 +60,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
     IERC721 public immutable goldNFTContract;
 
-    // On-Chain Transaction fees(Decimals: 6): 200 -> 0.02%, 195 -> 0.0195%, 10000 -> 1%
-    // uint24 public onChainTransactionfee = 200;
-    // address public feeReceiver;
-
     enum CollateralStatus {
         WAITING,
         RECEIVED,
@@ -104,19 +100,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     // For checking the total number of collateral token ids
     uint256[] public collateralTokenIds;
 
-    /**
-     * @dev unit: GPC(wei)
-     */
-    uint256 public totalCreatedGold = 0;
-    uint256 public totalBurnedGold = 0;
-
     // ----------------------- Physical Gold -----------------------
-
-    /**
-    * @dev unit: GPC(wei)
-    */
-    uint256 public totalCreatedPhysicalGold = 0;
-    uint256 public totalBurnedPhysicalGold = 0;
 
     struct PhysicalGoldHistory {
         address physicalGoldMinter;
@@ -208,9 +192,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         );
         
         collateralIndexByAddress[msg.sender].push(_tokenId);
-
-        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
-        totalCreatedGold += gpcSupplyAmount;
         collateralTokenIds.push(_tokenId);
 
         // Leave a record for history inquiry
@@ -335,9 +316,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
         removeForCollateralTokenIds(indexOfTokenId2);
 
-        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
-        totalBurnedGold += gpcRepaymentAmount;
-
         // Leave a record for history inquiry
         userAllCollateralHistory[msg.sender].push(CollateralHistory(
             msg.sender,
@@ -353,9 +331,9 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         emit Repay(msg.sender, _tokenId, goldType, gpcRepaymentAmount, CollateralStatus.RETURNED, block.timestamp);
     }
 
-    function getTotalGPCSupply() public view returns(uint256) {
-        return totalCreatedGold - totalBurnedGold;
-    }
+    // function getTotalGPCSupply() public view returns(uint256) {
+    //     return totalCreatedGold - totalBurnedGold;
+    // }
 
     // ---------------------------------- Physical Gold ----------------------------------
     
@@ -373,7 +351,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
         _mint(_recipient, _gpcAmount);
 
-        totalCreatedPhysicalGold += _gpcAmount;
         mintAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
             _recipient,
@@ -388,7 +365,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
         _burn(msg.sender, _gpcAmount);
 
-        totalBurnedPhysicalGold += _gpcAmount;
         burnAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
             address(0),
@@ -396,10 +372,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
             block.timestamp
         ));
         emit BurnBackedByPhysicalGold(msg.sender, _gpcAmount, block.timestamp);
-    }
-
-    function getPhysicalGoldTotalSupply() public view returns(uint256) {
-        return totalCreatedPhysicalGold - totalBurnedPhysicalGold;
     }
 
     function recoverERC20(address _tokenAddress, uint256 _amount) public onlyOwner {
