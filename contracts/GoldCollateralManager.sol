@@ -354,7 +354,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
-        require(totalSupply() <= maxMintingAmount, "totalSupply amount should be lower than maxMintingAmount or equal maxMintingAmount.");
+        require(totalSupply() + _gpcAmount <= maxMintingAmount, "(totalSupply + _gpcAmount) amount should be lower than maxMintingAmount or equal maxMintingAmount.");
 
         _mint(_recipient, _gpcAmount);
 
@@ -387,7 +387,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function recoverERC721(address _tokenAddress, uint256 _tokenId) public onlyOwner {
-        require(_tokenAddress != address(goldNFTContract), "_tokenAddress should not be goldNFTContract address.");
+        require(_tokenAddress != address(goldNFTContract), "_tokenAddress should  be goldNFTContract address.");
 
         IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
         emit RecoverERC721(_tokenAddress, _tokenId);
