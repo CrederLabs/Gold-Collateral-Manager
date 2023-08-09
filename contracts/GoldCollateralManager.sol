@@ -115,8 +115,8 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     mapping(address => PhysicalGoldHistory[]) public mintAllPhysicalGoldHistory;
     mapping(address => PhysicalGoldHistory[]) public burnAllPhysicalGoldHistory;
 
-    // 1kg
-    uint256 public maxMintingAmount = 100000 * 10**18;
+    // 10kg
+    uint256 public maxMintingAmount = 1000000 * 10**18;
 
     constructor(IERC721 _goldNFTContract) ERC20("Gold Pegged Coin", "GPC") {
         // Grant the contract deployer the default admin role: it will be able
@@ -354,7 +354,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
-        require(_gpcAmount <= maxMintingAmount, "_gpcAmount should be lower than maxMintingAmount or equal maxMintingAmount.");
+        require(totalSupply() <= maxMintingAmount, "totalSupply amount should be lower than maxMintingAmount or equal maxMintingAmount.");
 
         _mint(_recipient, _gpcAmount);
 
