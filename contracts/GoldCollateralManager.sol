@@ -387,7 +387,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     }
 
     function recoverERC721(address _tokenAddress, uint256 _tokenId) public onlyOwner {
-        require(_tokenAddress != address(goldNFTContract), "_tokenAddress should  be goldNFTContract address.");
+        require(_tokenAddress != address(goldNFTContract), "_tokenAddress should not be goldNFTContract address.");
 
         IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
         emit RecoverERC721(_tokenAddress, _tokenId);
