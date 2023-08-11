@@ -26,7 +26,9 @@ $ yarn deploy:cypress
 3. Cypress Test for KLIP App(Test Coin B): 0x1884eCB0cC67785b14fD61779E83082405a06706
 4. Cypress: 
 
-## Audit
+## Audit Report
+
+- [SlowMist Audit Report - GoldCollateralManager](https://github.com/CrederLabs/audit/blob/main/GoldCollateralManager/SlowMist%20Audit%20Report%20-%20GoldCollateralManager.pdf)
 
 ## Creder's Services and Community
 

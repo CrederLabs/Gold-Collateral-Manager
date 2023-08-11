@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // If MCGB NFT is deposited as collateral, 1g:100GPC pegged tokens are issued. (KIP-7 minting)
 // If you pay off the 1g:100 GPC pegged token, you will get your collateral back. KIP-7 tokens received after that will be burned.
@@ -56,13 +57,11 @@ contract UserLock is Ownable {
 }
 
 contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant PHYSICAL_GOLD_MINTER_ROLE = keccak256("PHYSICAL_GOLD_MINTER_ROLE");
 
     IERC721 public immutable goldNFTContract;
-
-    // On-Chain Transaction fees(Decimals: 6): 200 -> 0.02%, 195 -> 0.0195%, 10000 -> 1%
-    // uint24 public onChainTransactionfee = 200;
-    // address public feeReceiver;
 
     enum CollateralStatus {
         WAITING,
@@ -104,19 +103,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     // For checking the total number of collateral token ids
     uint256[] public collateralTokenIds;
 
-    /**
-     * @dev unit: GPC(wei)
-     */
-    uint256 public totalCreatedGold = 0;
-    uint256 public totalBurnedGold = 0;
-
     // ----------------------- Physical Gold -----------------------
-
-    /**
-    * @dev unit: GPC(wei)
-    */
-    uint256 public totalCreatedPhysicalGold = 0;
-    uint256 public totalBurnedPhysicalGold = 0;
 
     struct PhysicalGoldHistory {
         address physicalGoldMinter;
@@ -128,12 +115,13 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     mapping(address => PhysicalGoldHistory[]) public mintAllPhysicalGoldHistory;
     mapping(address => PhysicalGoldHistory[]) public burnAllPhysicalGoldHistory;
 
+    // 10kg
+    uint256 public maxMintingAmount = 1000000 * 10**18;
+
     constructor(IERC721 _goldNFTContract) ERC20("Gold Pegged Coin", "GPC") {
         // Grant the contract deployer the default admin role: it will be able
         // to grant and revoke any roles
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
-        // feeReceiver = msg.sender;
 
         goldNFTContract = _goldNFTContract;
 
@@ -162,6 +150,18 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         repaymentFeeAmount[7] = 30 * 10**18;
     }
 
+    mapping (address => bool) private _locks;
+
+    modifier nonReentrant {
+        require(_locks[msg.sender] != true, "ReentrancyGuard: reentrant call");
+
+        _locks[msg.sender] = true;
+
+        _;
+    
+        _locks[msg.sender] = false;
+    }
+
     function addAdminRole(address _account) public onlyOwner() {
         _grantRole(DEFAULT_ADMIN_ROLE, _account);
     }
@@ -176,12 +176,15 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
     // ---------------------------------- Gold NFT ----------------------------------
     
-    function createNewCollateral(uint256 _tokenId) public whenNotPaused {
+    function createNewCollateral(uint256 _tokenId) public whenNotPaused nonReentrant {
         require(goldNFTContract.ownerOf(_tokenId) == msg.sender, "You don't own!");
 
         uint16 goldType = TheMiningClubInterface(address(goldNFTContract)).getGoldTypeOfTokenId(_tokenId);
         require(goldType > 0, "Invalid goldType");
-        
+
+        uint256 gpcSupplyAmount = collateralExchangeAmount[goldType];
+        require(gpcSupplyAmount > 0, "Invalid gpcSupplyAmount");
+
         goldNFTContract.transferFrom(msg.sender, address(this), _tokenId);
 
         collaterals[_tokenId] = CollateralData(
@@ -193,15 +196,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         );
         
         collateralIndexByAddress[msg.sender].push(_tokenId);
-
-        uint256 gpcSupplyAmount = collateralExchangeAmount[goldType];
-        require(gpcSupplyAmount > 0, "Invalid gpcSupplyAmount");
-
-        // mint KIP-7(ERC-20)
-        _mint(msg.sender, gpcSupplyAmount);
-
-        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
-        totalCreatedGold += gpcSupplyAmount;
         collateralTokenIds.push(_tokenId);
 
         // Leave a record for history inquiry
@@ -212,6 +206,9 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
             CollateralStatus.RECEIVED,
             block.timestamp
         ));
+
+        // mint KIP-7(ERC-20)
+        _mint(msg.sender, gpcSupplyAmount);
 
         emit CreateNewCollateral(msg.sender, _tokenId, goldType, gpcSupplyAmount, CollateralStatus.RECEIVED, block.timestamp);
     }
@@ -239,11 +236,11 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         emit DeleteRepaymentFeeAmount(_goldType);
     }
 
-    function findCollateralsByAddress() public view returns (uint256[] memory) {
+    function findCollateralsByAddress() external view returns (uint256[] memory) {
         return collateralIndexByAddress[msg.sender];
     }
 
-    function getCollateralsLengthByAddress(address _account) public view returns (uint256) {
+    function getCollateralsLengthByAddress(address _account) external view returns (uint256) {
         return collateralIndexByAddress[_account].length;
     }
 
@@ -293,7 +290,7 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         return userAllCollateralHistory[account];
     }
     
-    function repay(uint256 _tokenId) payable public whenNotPaused {
+    function repay(uint256 _tokenId) payable public whenNotPaused nonReentrant {
         require(collaterals[_tokenId].userAccount == msg.sender, "Not matched userAccount");
         require(collaterals[_tokenId].collateralStatus == CollateralStatus.RECEIVED, "No received collateral");
 
@@ -322,12 +319,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
         uint256 indexOfTokenId2 = findCollateralIndexByTokenId(_tokenId);
         removeForCollateralTokenIds(indexOfTokenId2);
-        
-        // Give back NFTs
-        goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
-
-        // Info record (overflow check function added since 0.8.x or later. No need to use SafeMath)
-        totalBurnedGold += gpcRepaymentAmount;
 
         // Leave a record for history inquiry
         userAllCollateralHistory[msg.sender].push(CollateralHistory(
@@ -338,11 +329,10 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
             block.timestamp
         ));
 
-        emit Repay(msg.sender, _tokenId, goldType, gpcRepaymentAmount, CollateralStatus.RETURNED, block.timestamp);
-    }
+        // Give back NFTs
+        goldNFTContract.transferFrom(address(this), msg.sender, _tokenId);
 
-    function getTotalGPCSupply() public view returns(uint256) {
-        return totalCreatedGold - totalBurnedGold;
+        emit Repay(msg.sender, _tokenId, goldType, gpcRepaymentAmount, CollateralStatus.RETURNED, block.timestamp);
     }
 
     // ---------------------------------- Physical Gold ----------------------------------
@@ -355,13 +345,19 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         _revokeRole(PHYSICAL_GOLD_MINTER_ROLE, _account);
     }
 
+    function setMaxMintingAmount(uint256 _maxMintingAmount) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_maxMintingAmount > 0, "Invalid _maxMintingAmount");
+        maxMintingAmount = _maxMintingAmount;
+        emit SetMaxMintingAmount(maxMintingAmount);
+    }
+
     function mintBackedByPhysicalGold(uint256 _gpcAmount, address _recipient) public onlyRole(PHYSICAL_GOLD_MINTER_ROLE) {
         require(_recipient != address(0), "Invalid _recipient address");
         require(_gpcAmount > 0, "Invalid _gpcAmount");
+        require(totalSupply() + _gpcAmount <= maxMintingAmount, "(totalSupply + _gpcAmount) amount should be lower than maxMintingAmount or equal maxMintingAmount.");
 
         _mint(_recipient, _gpcAmount);
 
-        totalCreatedPhysicalGold += _gpcAmount;
         mintAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
             _recipient,
@@ -376,7 +372,6 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
 
         _burn(msg.sender, _gpcAmount);
 
-        totalBurnedPhysicalGold += _gpcAmount;
         burnAllPhysicalGoldHistory[msg.sender].push(PhysicalGoldHistory(
             msg.sender,
             address(0),
@@ -386,16 +381,14 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
         emit BurnBackedByPhysicalGold(msg.sender, _gpcAmount, block.timestamp);
     }
 
-    function getPhysicalGoldTotalSupply() public view returns(uint256) {
-        return totalCreatedPhysicalGold - totalBurnedPhysicalGold;
-    }
-
     function recoverERC20(address _tokenAddress, uint256 _amount) public onlyOwner {
-        IERC20(_tokenAddress).transfer(msg.sender, _amount);
+        IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
         emit RecoverERC20(_tokenAddress, _amount);
     }
 
     function recoverERC721(address _tokenAddress, uint256 _tokenId) public onlyOwner {
+        require(_tokenAddress != address(goldNFTContract), "_tokenAddress should not be goldNFTContract address.");
+
         IERC721(_tokenAddress).transferFrom(address(this), msg.sender, _tokenId);
         emit RecoverERC721(_tokenAddress, _tokenId);
     }
@@ -417,4 +410,5 @@ contract GoldCollateralManager is ERC20, UserLock, AccessControl, Pausable {
     event RecoverERC20(address _tokenAddress, uint256 _amount);
     event RecoverERC721(address _tokenAddress, uint256 _tokenId);
     event RecoverKLAY(uint256 _amount);
+    event SetMaxMintingAmount(uint256 _maxMintingAmount);
 }
