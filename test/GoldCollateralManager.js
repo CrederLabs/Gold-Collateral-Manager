@@ -93,6 +93,8 @@ describe("GoldCollateralManager", function () {
         it("Should be CollateralStatus.RECEIVED", async function () {
             const { devNFT, goldCollateralManager, tokenId, COLLATERAL_STATUS_RECEIVED } = await loadFixture(deployFixture);
 
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
+
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
 
@@ -102,6 +104,8 @@ describe("GoldCollateralManager", function () {
 
         it("Should transfer NFT to GoldCollateralManager Contract", async function () {
             const { devNFT, goldCollateralManager, tokenId } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
             
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -111,6 +115,8 @@ describe("GoldCollateralManager", function () {
 
         it("Should transfer GPC to the owner", async function () {
             const { devNFT, goldCollateralManager, tokenId, owner } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
             
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -120,6 +126,8 @@ describe("GoldCollateralManager", function () {
 
         it("Should find owner's collateral token ids", async function () {
             const { devNFT, goldCollateralManager, tokenId } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -132,6 +140,8 @@ describe("GoldCollateralManager", function () {
     describe("Repay", function () {
         it("Should be CollateralStatus.RETURNED", async function () {
             const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount, COLLATERAL_STATUS_RETURNED } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -149,6 +159,8 @@ describe("GoldCollateralManager", function () {
         it("Should burn GPC by GoldCollateralManager Contract", async function () {
             const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount, owner } = await loadFixture(deployFixture);
 
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
+
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
 
@@ -163,6 +175,8 @@ describe("GoldCollateralManager", function () {
         
         it("Should give back NFT to the owner", async function () {
             const { devNFT, goldCollateralManager, tokenId, owner, gpcRepaymentAmount } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
             
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -177,6 +191,8 @@ describe("GoldCollateralManager", function () {
 
         it("Should delete owner's collateral token ids", async function () {
             const { devNFT, goldCollateralManager, tokenId, gpcRepaymentAmount } = await loadFixture(deployFixture);
+
+            await devNFT.setGoldCollateralManagerContract(goldCollateralManager.target);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
@@ -195,6 +211,8 @@ describe("GoldCollateralManager", function () {
     describe("UserLock", function () {
         it("LockUser should not transfer GPC", async function () {
             const { devNFT, goldCollateralManager, tokenId, owner, otherAccount } = await loadFixture(deployFixture);
+
+            await devNFT.setTransferPauseFlag(false);
 
             await devNFT.approve(goldCollateralManager.target, tokenId);
             await goldCollateralManager.createNewCollateral(tokenId);
