@@ -11,7 +11,7 @@ async function main() {
   let goldNFTAddress;
   if (process.env.NETWORK == "baobab") {
     console.log("baobab 환경 배포를 시작합니다.");
-    goldNFTAddress = "0x37d559bc251be87baf2607f970522c4ee3663596";
+    goldNFTAddress = "0xba773eaC8f34ed650bAcaBBA67784b7218813684";
   } else if (process.env.NETWORK == "cypress") {
     console.log("cypress 환경 배포를 시작합니다.");
     goldNFTAddress = "0xCcC587f9c123cF0a2F2D51EC7e6033Ae94bFf4Ca";

@@ -21,10 +21,9 @@ $ yarn deploy:cypress
 
 ## Contracts
 
-1. Baobab: 0x6D52C156Afc6A6483DEf1cB3c02056e8f5912462
-2. Cypress Test for KLIP App(Test Coin A): 0xaE4BEc15c663E6855fFdeFCF2e2074d56B4A4d1a
-3. Cypress Test for KLIP App(Test Coin B): 0x1884eCB0cC67785b14fD61779E83082405a06706
-4. Cypress: 
+1. Baobab: 0xF138a4293902F42B285c014e1Dc16f58F748114C
+2. Cypress Test for KLIP App(Test Coin A): 
+3. Cypress: 
 
 ## Audit Report
 
