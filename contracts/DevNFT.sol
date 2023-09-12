@@ -44,7 +44,7 @@ interface IERC721Receiver {
     ) external returns (bytes4);
 }
 
-contract ERC721 is IERC721 {
+contract ERC721 is IERC721, Ownable {
     event Transfer(address indexed from, address indexed to, uint indexed id);
     event Approval(address indexed owner, address indexed spender, uint indexed id);
     event ApprovalForAll(
@@ -52,6 +52,32 @@ contract ERC721 is IERC721 {
         address indexed operator,
         bool approved
     );
+
+    // -------------------------------- transfer pause 테스트 START --------------------------------
+    bool private transferPauseFlag;
+    address public goldCollateralManagerContract;
+
+    constructor () {
+        transferPauseFlag = true;
+    }
+
+    function setGoldCollateralManagerContract(address _goldCollateralManagerContract) public onlyOwner {
+        goldCollateralManagerContract = _goldCollateralManagerContract;
+    }
+
+    function setTransferPauseFlag(bool _transferPauseFlag) public onlyOwner {
+        transferPauseFlag = _transferPauseFlag;
+    }
+
+    modifier transferCheck(address from, address to) {
+        if (transferPauseFlag) {
+            if (from != goldCollateralManagerContract && to != goldCollateralManagerContract) {
+                revert("transferPauseFlag: true");
+            }
+        }
+        _;
+    }
+    // -------------------------------- transfer pause 테스트 END --------------------------------
 
     // Mapping from token ID to owner address
     mapping(uint => address) internal _ownerOf;
@@ -113,7 +139,7 @@ contract ERC721 is IERC721 {
             spender == _approvals[id]);
     }
 
-    function transferFrom(address from, address to, uint id) public {
+    function transferFrom(address from, address to, uint id) public transferCheck(from, to) {
         require(from == _ownerOf[id], "from != owner");
         require(to != address(0), "transfer to zero address");
 
@@ -178,7 +204,9 @@ contract ERC721 is IERC721 {
     }
 }
 
-contract DevNFT is ERC721, Ownable {
+contract DevNFT is ERC721 {
+    mapping(uint256 => uint16) private _goldTypeOfTokenId;
+
     function mint(address to, uint id) external {
         _mint(to, id);
     }
@@ -187,8 +215,6 @@ contract DevNFT is ERC721, Ownable {
         require(msg.sender == _ownerOf[id], "not owner");
         _burn(id);
     }
-
-    mapping(uint256 => uint16) private _goldTypeOfTokenId;
 
     // uri 연결 없이 테스트용 발행
     function mintTheMiningClub(address to, uint256 tokenId, uint16 goldType) public onlyOwner returns (bool) {
