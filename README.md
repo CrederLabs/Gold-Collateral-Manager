@@ -21,7 +21,7 @@ $ yarn deploy:cypress
 
 ## Contracts
 
-1. Baobab: 0xF138a4293902F42B285c014e1Dc16f58F748114C
+1. Baobab: 0xaD49d305143fD7A67511bb77Ba7E9650652340Da (NFT transfer disable 버전 적용. Repay KLAY 수수료 0.1%로 수정)
 2. Cypress Test for KLIP App(Test Coin A): 
 3. Cypress: 
 
