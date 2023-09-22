@@ -38,21 +38,21 @@ async function main() {
     await goldCollateralManager.registerCollateralExchangeAmount(8, "50000000000000000000000");
     
     // ------------ GPC -> Gold NFT KLAY 수수료 수정(0.1%) ------------
-    // 500 GPC -> 0.05g
+    // 5 GPC -> 0.05g: 0.005 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(1, "5000000000000000");
-    // 10000 GPC -> 1g
+    // 100 GPC -> 1g: 0.1 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(2, "100000000000000000");
-    // 50000 GPC -> 5g
+    // 500 GPC -> 5g: 0.5 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(3, "500000000000000000");
-    // 100000 GPC -> 10g
+    // 1000 GPC -> 10g: 1 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(4, "1000000000000000000");
-    // 500000 GPC -> 50g
+    // 5000 GPC -> 50g: 5 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(5, "5000000000000000000");
-    // 1000000 GPC -> 100g
+    // 10000 GPC -> 100g: 10 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(6, "10000000000000000000");
-    // 2000000 GPC -> 200g
+    // 20000 GPC -> 200g: 20 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(7, "20000000000000000000");
-    // 5000000 GPC -> 500g
+    // 50000 GPC -> 500g: 50 KLAY
     await goldCollateralManager.registerRepaymentFeeAmount(8, "50000000000000000000");
   }
   
