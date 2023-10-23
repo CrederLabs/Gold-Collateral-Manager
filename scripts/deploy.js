@@ -17,8 +17,8 @@ async function main() {
     console.log("cypress 환경 배포를 시작합니다.");
     // goldNFTAddress = "0xCcC587f9c123cF0a2F2D51EC7e6033Ae94bFf4Ca";
 
-    // TEST C
-    goldNFTAddress = "0xa0ebeac0c4652ae038463be1dfc8c256e4d0a436"
+    // TEST D
+    goldNFTAddress = "0x61dbef5ca58350819c8b0672462c9b7a4362eef8"
   } else {
     console.log("local 환경 배포를 시작합니다.");
 
