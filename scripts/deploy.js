@@ -11,11 +11,14 @@ async function main() {
   let goldNFTAddress;
   if (process.env.NETWORK == "baobab") {
     console.log("baobab 환경 배포를 시작합니다.");
-    // NFT transfer disable 버전
-    goldNFTAddress = "0xba773eaC8f34ed650bAcaBBA67784b7218813684";
+    // NFT transfer 다시 허용 버전
+    goldNFTAddress = "0x7c5f9F89D2C778A2141ec07732C26a45adF80764";
   } else if (process.env.NETWORK == "cypress") {
     console.log("cypress 환경 배포를 시작합니다.");
-    goldNFTAddress = "0xCcC587f9c123cF0a2F2D51EC7e6033Ae94bFf4Ca";
+    // goldNFTAddress = "0xCcC587f9c123cF0a2F2D51EC7e6033Ae94bFf4Ca";
+
+    // TEST C
+    goldNFTAddress = "0xa0ebeac0c4652ae038463be1dfc8c256e4d0a436"
   } else {
     console.log("local 환경 배포를 시작합니다.");
 
@@ -32,7 +35,7 @@ async function main() {
   console.log("goldCollateralManager Address: ", goldCollateralManager.target);
   // ------------ Deploy END ------------
 
-  if (process.env.NETWORK == "baobab") {
+  if (process.env.NETWORK == "baobab" || process.env.NETWORK == "cypress") {
     // 500g 추가
     // 8: 500g -> 50000 GPC
     await goldCollateralManager.registerCollateralExchangeAmount(8, "50000000000000000000000");
