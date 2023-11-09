@@ -14,11 +14,11 @@ async function main() {
     // NFT transfer 다시 허용 버전
     goldNFTAddress = "0x7c5f9F89D2C778A2141ec07732C26a45adF80764";
   } else if (process.env.NETWORK == "cypress") {
-    console.log("cypress 환경 배포를 시작합니다.");
-    // goldNFTAddress = "0xCcC587f9c123cF0a2F2D51EC7e6033Ae94bFf4Ca";
-
     // TEST D
-    goldNFTAddress = "0x61dbef5ca58350819c8b0672462c9b7a4362eef8"
+    // goldNFTAddress = "0x61dbef5ca58350819c8b0672462c9b7a4362eef8"
+
+    console.log("cypress 환경 배포를 시작합니다.");
+    goldNFTAddress = "0x987dcc50b010a5db6a10d859c6dc938d92d09980";
   } else {
     console.log("local 환경 배포를 시작합니다.");
 
