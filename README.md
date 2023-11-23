@@ -26,6 +26,12 @@ $ yarn deploy:cypress
 2. Cypress GPC Test D: 0x547FADFF849B9f840ea7A01d13603b77C9cA2381 
 3. Cypress(정식): 0x27397bFbeFD58A437f2636f80A8e70cFc363d4Ff
 
+## 새 GoldType 등록 방법
+
+1. e금 종류 표(https://github.com/CrederLabs/korea-gold-exchange-nft)의 GoldType을 확인하고, uri 정보를 ipfs에 업로드 한다.
+2. ipfs 정보와 함께 민팅 정보를 TMC API 서버에 등록한다.
+3. GoldCollateralManager(GPC) 컨트랙트의 registerCollateralExchangeAmount, registerRepaymentFeeAmount 정보를 등록한다.
+
 ## Audit Report
 
 - [SlowMist Audit Report - GoldCollateralManager](https://github.com/CrederLabs/audit/blob/main/GoldCollateralManager/SlowMist%20Audit%20Report%20-%20GoldCollateralManager.pdf)
