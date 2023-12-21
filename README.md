@@ -18,7 +18,7 @@ $ yarn deploy:cypress
 ```
 
 ## Contracts
-GPC Token: 0x27397bFbeFD58A437f2636f80A8e70cFc363d4Ff
+GPC Token(Klaytn Mainnet): 0x27397bFbeFD58A437f2636f80A8e70cFc363d4Ff
 
 ## Audit Report
 
