@@ -28,7 +28,6 @@ GPC Token: 0x27397bFbeFD58A437f2636f80A8e70cFc363d4Ff
 
 - [Official Website](https://www.creder.biz)
 - [The Mining Club](https://theminingclub.io)
-- [Medium](https://medium.com/@creder2022)
-- [Twitter](https://twitter.com/creder_official)
-- [Telegram](https://t.me/creder_tg)
-- [Discord](https://discord.com/invite/dR6FD4BYNk)
+- [Goldstation](https://goldstation.io)
+- [Goldstation Twitter](https://twitter.com/goldstation_io)
+- [Goldstation Telegram](https://t.me/+wRq1MU3wWvdlOGM1)
